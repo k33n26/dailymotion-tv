@@ -80,7 +80,7 @@ function getBest(
 
 
 /*
- segment proxy
+ proxy stream
 */
 async function proxyFile(
   fileUrl,
@@ -173,12 +173,11 @@ async function proxyFile(
 
 
 /*
- manifest proxy
+ proxy manifest
 */
 async function proxyManifest(
   manifestUrl,
-  origin,
-  request
+  origin
 ){
 
   const upstream =
@@ -274,13 +273,13 @@ export default {
       ){
 
         return new Response(
-          "DMTV V1"
+          "DMTV MP4 V1"
         );
       }
 
 
       /*
-       segment
+       segment proxy
       */
       if(
         url.pathname ===
@@ -307,7 +306,8 @@ export default {
       const id =
         path
           .replace(".json","")
-          .replace(".m3u8","");
+          .replace(".m3u8","")
+          .replace(".mp4","");
 
 
       const meta =
@@ -353,13 +353,29 @@ export default {
 
 
       /*
-       hls
+       mp4 fake output
+      */
+      if(
+        path.endsWith(
+          ".mp4"
+        )
+      ){
+
+        return await proxyManifest(
+          stream,
+          url.origin
+        );
+      }
+
+
+      /*
+       m3u8 output
       */
       return await proxyManifest(
         stream,
-        url.origin,
-        request
+        url.origin
       );
+
     }
     catch(e){
 
