@@ -1,64 +1,41 @@
-async function loadMeta(
-  id
-){
+async function loadMeta(id){
 
   const json =
     await fetch(
       `https://www.dailymotion.com/player/metadata/video/${id}`,
       {
         headers:{
-          "User-Agent":
-            "Mozilla/5.0"
+          "User-Agent":"Mozilla/5.0"
         }
       }
-    ).then(
-      r => r.json()
-    );
+    ).then(r=>r.json());
 
-
-  if(
-    !json.qualities
-  ){
-    throw new Error(
-      "metadata"
-    );
+  if(!json.qualities){
+    throw new Error("metadata");
   }
-
 
   return json;
 }
 
 
-/*
- best hls
-*/
-function getBest(
-  qualities
-){
+function getBest(qualities){
 
-  const order =
-    [
-      "auto",
-      "1080",
-      "720",
-      "480",
-      "380",
-      "240"
-    ];
+  const order = [
+    "auto",
+    "1080",
+    "720",
+    "480",
+    "380",
+    "240"
+  ];
 
 
-  for(
-    const q
-    of order
-  ){
+  for(const q of order){
 
     const arr =
       qualities[q];
 
-    if(
-      arr &&
-      arr.length
-    ){
+    if(arr && arr.length){
 
       const hls =
         arr.find(
@@ -80,7 +57,7 @@ function getBest(
 
 
 /*
- proxy stream
+ segment proxy
 */
 async function proxyFile(
   fileUrl,
@@ -124,19 +101,15 @@ async function proxyFile(
     new Headers();
 
 
-  const pass =
-    [
-      "content-type",
-      "content-length",
-      "content-range",
-      "accept-ranges"
-    ];
+  const pass = [
+    "content-type",
+    "content-length",
+    "content-range",
+    "accept-ranges"
+  ];
 
 
-  for(
-    const key
-    of pass
-  ){
+  for(const key of pass){
 
     const value =
       upstream.headers.get(
@@ -173,7 +146,7 @@ async function proxyFile(
 
 
 /*
- proxy manifest
+ manifest proxy
 */
 async function proxyManifest(
   manifestUrl,
@@ -209,9 +182,7 @@ async function proxyManifest(
       line => {
 
         if(
-          line.startsWith(
-            "#"
-          )
+          line.startsWith("#")
         ){
           return line;
         }
@@ -220,9 +191,7 @@ async function proxyManifest(
           line;
 
         if(
-          !line.startsWith(
-            "http"
-          )
+          !line.startsWith("http")
         ){
 
           full =
@@ -252,28 +221,21 @@ async function proxyManifest(
 
 export default {
 
-  async fetch(
-    request
-  ){
+  async fetch(request){
 
     try{
 
       const url =
-        new URL(
-          request.url
-        );
+        new URL(request.url);
 
 
-      /*
-       debug
-      */
       if(
         url.pathname ===
         "/debug"
       ){
 
         return new Response(
-          "DMTV MP4 V1"
+          "DMTV FINAL"
         );
       }
 
@@ -306,14 +268,11 @@ export default {
       const id =
         path
           .replace(".json","")
-          .replace(".m3u8","")
-          .replace(".mp4","");
+          .replace(".m3u8","");
 
 
       const meta =
-        await loadMeta(
-          id
-        );
+        await loadMeta(id);
 
 
       const stream =
@@ -322,9 +281,7 @@ export default {
         );
 
 
-      if(
-        !stream
-      ){
+      if(!stream){
         throw new Error(
           "stream"
         );
@@ -353,23 +310,7 @@ export default {
 
 
       /*
-       mp4 fake output
-      */
-      if(
-        path.endsWith(
-          ".mp4"
-        )
-      ){
-
-        return await proxyManifest(
-          stream,
-          url.origin
-        );
-      }
-
-
-      /*
-       m3u8 output
+       REAL HLS
       */
       return await proxyManifest(
         stream,
