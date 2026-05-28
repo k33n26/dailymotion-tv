@@ -1,4 +1,7 @@
 #EXTM3U
-#EXTINF:-1 tvg-name="Namus" tvg-logo="LOGO" group-title="Film",Namus
+#EXTINF:-1 tvg-name="Namus Düşmanı" tvg-logo="LOGO" group-title="Zeki Alasya Metin Akpınar",Namus Düşmanı
 https://dmtv.k33n26.workers.dev/x8rf79b.m3u8
+
+#EXTINF:-1 tvg-name="Beyoğlu Beyoğlu" tvg-logo="logo" group-title="Zeki Alasya Metin Akpınar",Beyoğlu Beyoğlu
+https://dmtv.k33n26.workers.dev/x96zf6i.m3u8
 
