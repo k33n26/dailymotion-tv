@@ -36,7 +36,7 @@ for (const line of lines) {
 
   m3u +=
 `#EXTINF:-1 tvg-name="${name}" tvg-logo="${logo}" group-title="${group}",${name}
-${worker}/${id}.m3u8
+${worker}/${id}.mp4
 
 `;
 }
