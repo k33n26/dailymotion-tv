@@ -5,50 +5,42 @@ async function loadMeta(id){
       `https://www.dailymotion.com/player/metadata/video/${id}`,
       {
         headers:{
-          "User-Agent":"Mozilla/5.0"
+          "User-Agent":
+            "Mozilla/5.0"
         }
       }
-    ).then(r=>r.json());
-
-  if(!json.qualities){
-    throw new Error("metadata");
-  }
+    ).then(
+      r => r.json()
+    );
 
   return json;
 }
 
 
-function getBest(qualities){
+/*
+ extract manifest
+*/
+function getManifest(meta){
 
-  const order = [
-    "auto",
-    "1080",
-    "720",
-    "480",
-    "380",
-    "240"
-  ];
-
-
-  for(const q of order){
+  if(
+    meta.qualities &&
+    meta.qualities.auto
+  ){
 
     const arr =
-      qualities[q];
+      meta.qualities.auto;
 
-    if(arr && arr.length){
+    const hls =
+      arr.find(
+        x =>
+          x.type &&
+          x.type.includes(
+            "mpegURL"
+          )
+      );
 
-      const hls =
-        arr.find(
-          x =>
-            x.type &&
-            x.type.includes(
-              "mpegURL"
-            )
-        );
-
-      if(hls){
-        return hls.url;
-      }
+    if(hls){
+      return hls.url;
     }
   }
 
@@ -57,7 +49,7 @@ function getBest(qualities){
 
 
 /*
- segment proxy
+ proxy file
 */
 async function proxyFile(
   fileUrl,
@@ -146,7 +138,7 @@ async function proxyFile(
 
 
 /*
- manifest proxy
+ recursive manifest proxy
 */
 async function proxyManifest(
   manifestUrl,
@@ -165,7 +157,7 @@ async function proxyManifest(
     );
 
 
-  let manifest =
+  let text =
     await upstream.text();
 
 
@@ -176,12 +168,13 @@ async function proxyManifest(
     );
 
 
-  manifest =
-    manifest.replace(
+  text =
+    text.replace(
       /^([^#].+)$/gm,
       line => {
 
         if(
+          !line ||
           line.startsWith("#")
         ){
           return line;
@@ -191,20 +184,39 @@ async function proxyManifest(
           line;
 
         if(
-          !line.startsWith("http")
+          !line.startsWith(
+            "http"
+          )
         ){
 
           full =
             base + line;
         }
 
+
+        /*
+         nested m3u8
+        */
+        if(
+          full.includes(
+            ".m3u8"
+          )
+        ){
+
+          return `${origin}/proxy.m3u8?url=${encodeURIComponent(full)}`;
+        }
+
+
+        /*
+         ts / mp4 segment
+        */
         return `${origin}/seg?u=${encodeURIComponent(full)}`;
       }
     );
 
 
   return new Response(
-    manifest,
+    text,
     {
       headers:{
 
@@ -221,27 +233,34 @@ async function proxyManifest(
 
 export default {
 
-  async fetch(request){
+  async fetch(
+    request
+  ){
 
     try{
 
       const url =
-        new URL(request.url);
+        new URL(
+          request.url
+        );
 
 
+      /*
+       debug
+      */
       if(
         url.pathname ===
         "/debug"
       ){
 
         return new Response(
-          "DMTV FINAL"
+          "DMTV RECURSIVE V1"
         );
       }
 
 
       /*
-       segment proxy
+       segment
       */
       if(
         url.pathname ===
@@ -260,6 +279,26 @@ export default {
       }
 
 
+      /*
+       nested manifest
+      */
+      if(
+        url.pathname ===
+        "/proxy.m3u8"
+      ){
+
+        const manifest =
+          url.searchParams.get(
+            "url"
+          );
+
+        return await proxyManifest(
+          manifest,
+          url.origin
+        );
+      }
+
+
       const path =
         url.pathname
           .replace("/", "");
@@ -272,18 +311,23 @@ export default {
 
 
       const meta =
-        await loadMeta(id);
-
-
-      const stream =
-        getBest(
-          meta.qualities
+        await loadMeta(
+          id
         );
 
 
-      if(!stream){
-        throw new Error(
-          "stream"
+      const manifest =
+        getManifest(
+          meta
+        );
+
+
+      if(
+        !manifest
+      ){
+
+        return Response.json(
+          meta
         );
       }
 
@@ -304,16 +348,13 @@ export default {
           title:
             meta.title,
 
-          stream
+          manifest
         });
       }
 
 
-      /*
-       REAL HLS
-      */
       return await proxyManifest(
-        stream,
+        manifest,
         url.origin
       );
 
